@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge-o-matic 2000</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <div class="scanlines"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="glitch" data-text="Merge-o-matic 2000">Merge-o-matic 2000</h1>
+            <p class="subtitle">Upload CSV or Excel files with data and timestamps. We'll time-align and filter them and let you download a combined dataset.</p>
+        </header>
+
+        <!-- Step 1: File Upload -->
+        <section class="section" id="upload-section">
+            <h2 class="section-title"><span class="icon">📁</span> Upload CSV, XLS, or XLSX Files</h2>
+            <div class="upload-zone" id="upload-zone">
+                <input type="file" id="file-input" multiple accept=".csv,.xls,.xlsx" hidden>
+                <div class="upload-content">
+                    <div class="upload-icon">⬆️</div>
+                    <p>Drag & drop files here or <button class="btn-link" onclick="document.getElementById('file-input').click()">browse</button></p>
+                    <p class="upload-hint">Supports CSV, XLS, XLSX</p>
+                </div>
+            </div>
+            <div id="upload-status" class="status-message hidden"></div>
+            <div id="file-list" class="file-list"></div>
+        </section>
+
+        <!-- Step 2: Column Selection & Cleanup -->
+        <section class="section hidden" id="columns-section">
+            <h2 class="section-title"><span class="icon">🧹</span> Select Columns, Data Titles, & Cleanup Options</h2>
+            <div id="file-configs"></div>
+        </section>
+
+        <!-- Step 2.5: Visualization -->
+        <section class="section hidden" id="graph-section">
+            <h2 class="section-title"><span class="icon">📊</span> Visualize Combined Data (Optional)</h2>
+            <div id="graph-column-select">
+                <div class="form-group">
+                    <label>Select columns to display on the combined graph:</label>
+                    <div id="graph-columns" class="checkbox-grid"></div>
+                </div>
+                <button class="btn btn-secondary" id="generate-graph-btn">Generate Graph</button>
+            </div>
+            <div id="graph-container" class="hidden">
+                <p class="graph-hint">💡 Drag on the graph to zoom and automatically set the time range below. Double-click to reset.</p>
+                <div id="plot"></div>
+            </div>
+        </section>
+
+        <!-- Step 3: Time Range & Interval -->
+        <section class="section hidden" id="time-section">
+            <h2 class="section-title"><span class="icon">🕐</span> Time Range & Interval</h2>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="start-date">📅 Start Date</label>
+                    <input type="date" id="start-date" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="start-time">Start Time</label>
+                    <input type="time" id="start-time" class="input" value="00:00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Select end range mode</label>
+                <div class="radio-group">
+                    <label class="radio-container">
+                        <input type="radio" name="range-mode" value="end-date" checked>
+                        <span class="radio-mark"></span>
+                        End date
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="range-mode" value="duration">
+                        <span class="radio-mark"></span>
+                        Duration (days)
+                    </label>
+                </div>
+            </div>
+
+            <div id="end-date-inputs" class="form-grid">
+                <div class="form-group">
+                    <label for="end-date">📅 End Date</label>
+                    <input type="date" id="end-date" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="end-time">End Time</label>
+                    <input type="time" id="end-time" class="input" value="00:00">
+                </div>
+            </div>
+
+            <div id="duration-input" class="form-group hidden">
+                <label for="duration-days">Duration in days</label>
+                <input type="number" id="duration-days" class="input" value="14" min="1">
+            </div>
+
+            <div class="form-group">
+                <label for="interval">⏳ Select output time interval</label>
+                <select id="interval" class="select">
+                    <option value="1s">1 second</option>
+                    <option value="30s">30 seconds</option>
+                    <option value="1min" selected>1 minute</option>
+                    <option value="5min">5 minutes</option>
+                    <option value="10min">10 minutes</option>
+                    <option value="15min">15 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="1D">1 day</option>
+                </select>
+            </div>
+
+            <!-- Alignment Strategy -->
+            <div class="subsection">
+                <h3 class="subsection-title">📉 Interval Alignment Strategy</h3>
+                <details class="accordion">
+                    <summary>💡 If your data is on the selected time interval, nothing will be changed. If it is not, it will be resampled according to your selections below.</summary>
+                    <div id="alignment-options" class="accordion-content"></div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Step 4: Create & Download -->
+        <section class="section hidden" id="download-section">
+            <h2 class="section-title"><span class="icon">⛷️</span> Create & Download Combined File</h2>
+            
+            <!-- Template Upload Option -->
+            <div class="template-section">
+                <div class="form-group">
+                    <label>📋 Excel Template (Optional)</label>
+                    <p class="upload-hint">Upload your Analysis Template.xlsx file, or leave empty to create a basic Excel file.</p>
+                    <div class="template-upload-row">
+                        <input type="file" id="template-input" accept=".xlsx,.xls" hidden>
+                        <button class="btn btn-secondary" id="template-browse-btn" onclick="document.getElementById('template-input').click()">
+                            Browse for Template
+                        </button>
+                        <span id="template-status" class="template-status">No template loaded</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-large" id="create-file-btn">
+                <span class="btn-text">Create combined data file</span>
+                <span class="btn-loader hidden"></span>
+            </button>
+            <div id="progress-container" class="hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p class="progress-text" id="progress-text">Processing...</p>
+            </div>
+            <div id="download-container" class="hidden">
+                <button class="btn btn-success btn-large" id="download-btn">
+                    📥 Download Combined File
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Global Loading Bar (fixed at bottom) -->
+    <div id="global-loader" class="global-loader hidden">
+        <div class="global-loader-content">
+            <div class="global-loader-bar">
+                <div class="global-loader-fill" id="global-loader-fill"></div>
+            </div>
+            <span class="global-loader-text" id="global-loader-text">Processing files...</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/fileHandlers.js"></script>
+    <script src="js/dataProcessing.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
