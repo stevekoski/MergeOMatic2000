@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Merge-o-matic 2000</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -33,6 +33,46 @@
             </div>
             <div id="upload-status" class="status-message hidden"></div>
             <div id="file-list" class="file-list"></div>
+        </section>
+
+        <!-- Step 1.5: Stack Files -->
+        <section class="section hidden" id="stack-section">
+            <h2 class="section-title"><span class="icon">📚</span> Stack Files (Same Equipment, Different Days)</h2>
+            <p class="section-description">
+                Combine multiple files from the same system covering different time periods into a single dataset.
+                Files with matching columns can be stacked together.
+            </p>
+            
+            <div id="existing-stacks"></div>
+            
+            <div class="stack-creator" id="stack-creator">
+                <h3 class="subsection-title">➕ Create New Stack</h3>
+                <p class="stack-instruction">Click files to select them for stacking. Files will be combined in chronological order.</p>
+                
+                <div class="stackable-files" id="stackable-files"></div>
+                
+                <div id="stack-warnings"></div>
+                <div id="stack-info"></div>
+                
+                <div class="form-grid stack-options">
+                    <div class="form-group">
+                        <label for="stack-name">Stack Name</label>
+                        <input type="text" id="stack-name" class="input" placeholder="e.g., Belt Data Oct 2025">
+                    </div>
+                    <div class="form-group">
+                        <label for="overlap-handling">If timestamps overlap</label>
+                        <select id="overlap-handling" class="select">
+                            <option value="first">Keep first occurrence</option>
+                            <option value="last">Keep last occurrence</option>
+                            <option value="average">Average values</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" id="create-stack-btn" disabled>
+                    ✅ Create Stack
+                </button>
+            </div>
         </section>
 
         <!-- Step 2: Column Selection & Cleanup -->
@@ -181,3 +221,4 @@
     <script src="js/app.js"></script>
 </body>
 </html>
+
